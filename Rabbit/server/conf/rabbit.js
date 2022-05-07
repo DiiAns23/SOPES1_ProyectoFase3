@@ -1,7 +1,7 @@
 // Aqui se realiza la conexion con Rabbit
 import amqp from 'amqplib/callback_api.js';
 
-const host = "rabbitmq-0.rabbitmq.practica2-201903865.svc.cluster.local"
+const host = process.env.HOST
 
 export const Rabbit = (data) =>{
     amqp.connect(`amqp://guest:guest@${host}:5672/`, function(error0, connection) {
