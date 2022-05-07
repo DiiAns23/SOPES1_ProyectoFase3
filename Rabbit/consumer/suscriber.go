@@ -36,13 +36,7 @@ func failOnError(err error, msg string) {
 }
 
 func GetCollection(collection string) *mongo.Collection {
-	userName := "root"
-	pass := "password"
-	host := "34.72.123.155"
-	if userName == "" || pass == "" || host == "" {
-		panic("Error: No se pudo conectar con mongodb, credeciales invalidas en el entorno")
-	}
-	URI := "mongodb://" + userName + ":" + pass + "@" + host + ":27017"
+	URI := os.Getenv("MONGO_URI")
 	client, err := mongo.NewClient(options.Client().ApplyURI(URI))
 	if err != nil {
 		panic(err.Error())
@@ -52,22 +46,27 @@ func GetCollection(collection string) *mongo.Collection {
 	if err != nil {
 		panic(err.Error())
 	}
-	return client.Database("ProyectoF2").Collection(collection)
+	
+	databaseName := os.Getenv("DATABASE_NAME")
+	return client.Database(databaseName).Collection(collection)
 }
 
 func createLogs(data GameJson) {
 	// (*w).Header().Set("Acces-Control-Allow-Origin", "*")
-	var coleccion = GetCollection("Logs")
+	colName := os.Getenv("COLLECTION_NAME")
+	var coleccion = GetCollection(colName)
 
 	coleccion.InsertOne(context.Background(), data)
 }
 
 func newPool() *redis.Pool {
+	
+	redisUrl := os.Getenv("REDIS_URL")
 	return &redis.Pool{
 		MaxIdle:   80,
 		MaxActive: 12000,
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", "35.184.204.155:6379")
+			c, err := redis.Dial("tcp", redisUrl)
 			if err != nil {
 				panic(err.Error())
 			}
@@ -154,12 +153,9 @@ type Result struct {
 }
 
 func obtenerBaseDeDatos() (db *sql.DB, e error) {
-	usuario := "root"
-	pass := ""
-	host := "tcp(104.197.99.115:4000)"
-	nombreBaseDeDatos := "sopes1"
+	tidbUrl := os.Getenv("TIDB_URL")
 	// Debe tener la forma usuario:contraseña@host/nombreBaseDeDatos
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@%s/%s", usuario, pass, host, nombreBaseDeDatos))
+	db, err := sql.Open("mysql",tidbUrl)
 	if err != nil {
 		return nil, err
 	}
