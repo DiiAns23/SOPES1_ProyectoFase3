@@ -43,7 +43,7 @@ func nombre(namegame string) map[string]string {
 func analizador() Comando {
 	fmt.Println("Generador de Trafico con Go")
 	// args := os.Args[0:]
-	var args = [12]string{"a", "rungame", "--namegame", "1 | Game1 ; 2 | Game2", "--players", "30", "--rungames", "300000", "--concurrence", "10", "--timeout", "0.09m"}
+	var args = [12]string{"a", "rungame", "--namegame", "1 | Game1", "--players", "30", "--rungames", "300000", "--concurrence", "100", "--timeout", "0.2m"}
 
 	var entrada Comando
 
@@ -84,9 +84,12 @@ func analizador() Comando {
 }
 func main() {
 
+	// ch := make(chan string)
+
 	comando := analizador()
 
 	wg := &sync.WaitGroup{}
+	m := &sync.RWMutex{}
 	// wg2 := &sync.WaitGroup{}
 
 	concurrence, err := strconv.Atoi(comando.concurrence)
@@ -101,26 +104,29 @@ func main() {
 		fmt.Printf("No se puede convertir este numero")
 	}
 
-	minutes := string(comando.timeout[0] * 60)
+	minutes := strings.TrimRight(comando.timeout, "m")
+
 	fmt.Println("Tiempo: ", minutes)
-	minutes_int, err := strconv.Atoi(minutes)
+	minutes_int, err := strconv.ParseFloat(minutes, 64)
 	if err != nil {
 		fmt.Printf("No se puede convertir este numero")
 	}
-	a := minutes_int * int(time.Minute)
-	timeinit := time.Now().Add(time.Duration(a))
+	minutes_int *= 60
+	fmt.Println("Tiempo: (sec)", minutes_int)
+
+	timeinit := time.Now().Add(time.Second * time.Duration(minutes_int))
 
 	for key := range comando.games {
-		for rungames >= 0 {
+		for rungames > 0 {
 			timefin := time.Now()
-			// fmt.Println("Tiempo 1: ", timeinit)
-			// fmt.Println("Tiempo 2: ", timefin)
-			if !timeinit.After(timefin) {
+			if timeinit.After(timefin) {
 				wg.Add(concurrence)
 				// wg2.Add(concurrence)
-				go showGoroutine(key, comando.players, wg)
+				go showGoroutine(key, comando.players, wg, m)
 				// go showGoroutine2(key, comando.players, wg2)
 			} else {
+				fmt.Println("Tiempo 1: ", timeinit)
+				fmt.Println("Tiempo 2: ", timefin)
 				fmt.Print("Timeout alcanzado, qchau")
 				os.Exit(3)
 			}
@@ -134,9 +140,10 @@ func main() {
 	// wg2.Wait()
 }
 
-func showGoroutine(id_juego string, jugadores string, wg *sync.WaitGroup) {
+func showGoroutine(id_juego string, jugadores string, wg *sync.WaitGroup, m *sync.RWMutex) {
 
 	//clienteHttp := &http.Client{}
+	m.RLock()
 	id_juego2, err := strconv.Atoi(id_juego)
 	if err != nil {
 		fmt.Printf("Error al convertir")
@@ -155,36 +162,30 @@ func showGoroutine(id_juego string, jugadores string, wg *sync.WaitGroup) {
 	juegoComoJson, err := json.Marshal(juego)
 
 	if err != nil {
-		// Maneja el error de acuerdo a tu situación
 		fmt.Printf("Error en : %v", err)
 	}
 
 	// fmt.Println("Datos a enviar a rabbit:", bytes.NewBuffer(juegoComoJson))
 
-	//ruta 2
+	//ruta 1
 	clienteHttp2 := &http.Client{}
-	url2 := "http://localhost:3000/" // Esto me lo debe de pasar Deivid
+	url2 := "http://localhost:3000/Jugar" // Esto me lo debe de pasar Deivid
 
-	peticion2, err := http.NewRequest("GET", url2, bytes.NewBuffer(juegoComoJson))
+	peticion2, err := http.NewRequest("POST", url2, bytes.NewBuffer(juegoComoJson))
 	if err != nil {
-		// Maneja el error de acuerdo a tu situación
 		fmt.Printf("Error en el POST a : %v", err)
 
 	}
-
-	// Podemos agregar encabezados
 	peticion2.Header.Add("Content-Type", "application/json")
-	respuesta2, err2 := clienteHttp2.Do(peticion2)
+	respuesta2, err := clienteHttp2.Do(peticion2)
 
-	if err2 != nil {
-		// Maneja el error de acuerdo a tu situación
-		fmt.Printf("Error en : %v", err2)
+	if err != nil {
+		fmt.Printf("Error en : %v", err)
 	}
-	// No olvides cerrar el cuerpo al terminar
-
 	defer respuesta2.Body.Close()
+	m.RUnlock()
 
-	time.Sleep(time.Millisecond)
+	time.Sleep(400 * time.Millisecond)
 	wg.Done()
 }
 
