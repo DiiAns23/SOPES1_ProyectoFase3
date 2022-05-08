@@ -6,7 +6,7 @@ use std::sync::Mutex;
 use bson::{doc};
 
 
-const MONGO_DB: &'static str = "ProyectoF2";
+const MONGO_DB: &'static str = "ProyectoF3";
 const MONGO_COLL_LOGS: &'static str = "Logs";
 
 pub fn scoped_config(cfg: &mut web::ServiceConfig) {

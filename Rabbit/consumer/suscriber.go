@@ -66,9 +66,9 @@ func newPool() *redis.Pool {
 		MaxIdle:   80,
 		MaxActive: 12000,
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", redisUrl)
+			c, err := redis.Dial("tcp",redisUrl)
 			if err != nil {
-				panic(err.Error())
+				fmt.Println(err.Error())
 			}
 			return c, err
 		},
@@ -137,7 +137,7 @@ func Redis(data GameJson) {
 
 	data2, err := client.Do("GET", "games")
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
 	}
 
 	fmt.Printf("%s \n", data2)
@@ -251,6 +251,8 @@ func main() {
 
 			// log.Print("Tipo Json: ", Juego)
 			createLogs(Juego)
+			Redis(Juego)
+			Insertar(r)
 
 			dotCount := bytes.Count(d.Body, []byte("."))
 			t := time.Duration(dotCount)
